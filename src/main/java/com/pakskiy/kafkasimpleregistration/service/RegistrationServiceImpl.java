@@ -44,11 +44,13 @@ public class RegistrationServiceImpl implements RegistrationService {
         try {
             String message = objectMapper.writeValueAsString(request);
             CompletableFuture<SendResult<String, String>> listenableFuture = producer.sendMessage(outboundTopic, "IN_KEY", String.format(message, 0));
-            SendResult<String, String> result = listenableFuture.get();
-            log.info(String.format("INSERT MESSAGE: \ntopic: %s\noffset: %d\npartition: %d\nvalue size: %d", result.getRecordMetadata().topic(),
-                    result.getRecordMetadata().offset(),
-                    result.getRecordMetadata().partition(),
-                    result.getRecordMetadata().serializedValueSize()));
+
+            listenableFuture.thenAcceptAsync(result -> {
+                log.info(String.format("INSERT MESSAGE: \ntopic: %s\noffset: %d\npartition: %d\nvalue size: %d", result.getRecordMetadata().topic(),
+                        result.getRecordMetadata().offset(),
+                        result.getRecordMetadata().partition(),
+                        result.getRecordMetadata().serializedValueSize()));
+            });
         } catch (Exception e) {
             log.error(e.toString(), "message: " + request.getEmail());
             throw new RegistrationException("Error sending email");
